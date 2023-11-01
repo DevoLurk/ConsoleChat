@@ -20,6 +20,7 @@ Chat::Chat(std::string path) : Chat()
 Chat::~Chat()
 {
     delete[] users;
+    delete[] pub_msgArr;
 }
 
 void Chat::start()
