@@ -1,9 +1,5 @@
 #include<iostream>
-#include<string>
-#include"Message.h"
-#include"Mailbox.h"
 #include"Chat.h"
-#include"myScreens.h"
 
 using namespace std;
 
@@ -11,6 +7,7 @@ int main()
 {
     setlocale(LC_ALL, "");
 
+/* 
     User u1("ddd", "123");
     User u2("qwe", "qwe");
     User u3("qwe", "qwe");
@@ -29,7 +26,6 @@ int main()
     m6.setReaded();
     m5.setReaded();
 
-
     u1.receiveMessage(m1);
     u1.receiveMessage(m2);
     u1.receiveMessage(m3);
@@ -37,11 +33,11 @@ int main()
     u1.receiveMessage(m5);
     u1.receiveMessage(m6);
     u2.receiveMessage(m7);
-
+*/
 
     Chat chat;
-
-    try
+ /*
+   try
     {
         chat.addUser(u1);
         chat.addUser(u2);
@@ -53,7 +49,7 @@ int main()
     {
         printf("\033[31m %s \033[0m \n", e.what());
     }
-    
+*/
     chat.start();
 
     return 0;

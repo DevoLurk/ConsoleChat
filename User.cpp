@@ -68,3 +68,8 @@ int User::getMessageCnt()
 {
 	return mailbox.getCapity();
 }
+
+std::string User::getPass()
+{
+	return password;
+}

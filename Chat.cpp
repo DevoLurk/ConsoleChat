@@ -12,47 +12,20 @@ Chat::Chat()
     pub_msgArr = new std::string[max_mails];
 }
 
+Chat::Chat(std::string path) : Chat()
+{
+    save_path = path;
+}
+
 Chat::~Chat()
 {
     delete[] users;
 }
 
-Chat::Chat(Chat&& other) noexcept
-{
-    users = other.users;
-    users_cnt = other.users_cnt;// no need to copy all because chat will inicialize it on start();
-    pub_msgArr = other.pub_msgArr;
-    mail_cnt = other.mail_cnt;
-
-    other.current_user = NULL;
-    other.current_screen = NOSCR;
-    other.previos_screen = NOSCR;
-    other.users_cnt = 0;
-    other.mail_cnt = 0;
-    other.users = nullptr;
-    other.pub_msgArr = nullptr;
-}
-
-Chat& Chat::operator=(Chat&& other) noexcept
-{
-    users = other.users;
-    users_cnt = other.users_cnt; // no need to copy all because chat will inicialize it on start();
-    pub_msgArr = other.pub_msgArr;
-    mail_cnt = other.mail_cnt;
-
-    other.current_user = NULL;
-    other.current_screen = NOSCR;
-    other.previos_screen = NOSCR;
-    other.users_cnt = 0;
-    other.mail_cnt = 0;
-    other.users = nullptr;
-    other.pub_msgArr = nullptr;
-
-    return *this;
-}
-
 void Chat::start()
 {
+    scr_load();
+
     if (!users_cnt)
         scr_newAccount();
 
@@ -71,10 +44,12 @@ void Chat::start()
             scr_newAccount();
             break;
         default:
+            mySleep();
             scr_welcome();
             std::cin >> ch;
             break;
         }
+        myCinClear();
     } 
 }
 
@@ -237,7 +212,7 @@ void Chat::showMailbox()
 
     for (auto i{ 0 }; i < box->getCapity(); ++i)
     {
-        str_out.assign(box->getMailsArray()[i].getMsg(), 0, 15);    // shortening messages
+        str_out.assign(box->getMailsArray()[i].getMsg(), 0, 17);    // shortening messages
         str_out += "...";
 
         if (box->getMailsArray()[i].getAuthor().length() > 11)      // shortening of long names
@@ -250,7 +225,7 @@ void Chat::showMailbox()
 
         if (box->getMailsArray()[i].getFlag())  // Unreaded will print grey. Readed will be yellow
         {
-            printf("  %d.", i + 1);
+            printf("  %3d.", i + 1);
             printf(" %11s: ", name_out.c_str());
             printf("\033[90m");
             printf("%s", str_out.c_str());
@@ -258,7 +233,7 @@ void Chat::showMailbox()
         }
         else
         {
-            printf("  %d.", i + 1);
+            printf("  %3d.", i + 1);
             printf(" %11s: ", name_out.c_str());
             printf("\033[33m");
             printf("%s", str_out.c_str());
@@ -317,13 +292,20 @@ void Chat::scr_exit()
         printf(".");
     }
 
-    printf("\n\n\t\t     complete\033[0m");
-    mySleep(250);
+    if (save())
+    {
+        printf("\n\n\t\t     Complete\033[0m");
+        mySleep(250);
+    }
+    else
+    {
+        printf("\n\n\t\t     Save error\033[0m");
+        mySleep(250);
+    }
 
     printf("\n\n\n\n\n\n\n");
     exit(0);
 }
-
 
 void Chat::cmdProcessing()
 {
@@ -532,7 +514,7 @@ void Chat::scr_public()
     if (mail_cnt)
     {
         printf("\033[A\033[A");
-        printf("\t\033[36m  %d messages loaded\033[0m\n\n", mail_cnt);
+        printf("\t\033[36mlsst %d messages loaded\033[0m\n\n", mail_cnt);
     }
 
     showHistory();
@@ -640,4 +622,146 @@ void Chat::rememberMail(std::string str)
         pub_msgArr[i - 1] = pub_msgArr[i];
         pub_msgArr[0] = str;
     }
+}
+
+bool Chat::save()
+{
+    std::ofstream fout(save_path, std::ios_base::binary);
+
+    if (!fout.is_open()) // if file is not opened/created
+        return false;
+
+    fout.write((char*)&mail_cnt, sizeof(int)); // save mail_cnt
+
+    for (auto i{ 0 }; i < mail_cnt; ++i)       // save mails array
+        saveStr(pub_msgArr[i], fout);
+
+    fout.write((char*)&users_cnt, sizeof(int)); // save users_cnt
+
+    for (auto i{ 0 }; i < users_cnt; ++i)    // save Users
+    {
+        bool foo;
+        int capity;
+        std::string str_out;
+        Message* msg_arr;
+
+        str_out = users[i].getName(); // save login
+        saveStr(str_out, fout);
+        str_out = users[i].getPass(); // save password
+        saveStr(str_out, fout);
+
+        msg_arr = users[i].getMailboxPtr()->getMailsArray();
+        capity = users[i].getMailboxPtr()->getCapity();
+       
+        fout.write((char*)&capity, sizeof(int)); // save Mailbox size
+
+        for (auto j{ 0 }; j < capity; ++j) 
+        {
+            str_out = msg_arr[j].getAuthor();
+            saveStr(str_out, fout);           // save name
+            str_out = msg_arr[j].getMsg();
+            saveStr(str_out, fout);           // save message text
+
+            foo = msg_arr[j].getFlag();        
+            fout.write((char*)&foo, sizeof(bool));  // save flag
+        }
+    }
+
+    fout.close();
+    return true;
+}
+
+bool Chat::load()
+{
+    std::ifstream fin(save_path, std::ios_base::binary);
+
+    if (!fin.is_open()) // if file is not opened
+        return false;
+
+    fin.read((char*)&mail_cnt, sizeof(int));
+    
+    for (auto i{ 0 }; i < mail_cnt; ++i)
+        loadStr(pub_msgArr[i], fin);
+
+    fin.read((char*)&users_cnt, sizeof(int));
+
+    for (auto i{ 0 }; i < users_cnt; ++i)    
+    {
+        bool foo;
+        int capity;
+        std::string name, txt;
+
+        loadStr(name, fin);
+        loadStr(txt, fin);
+
+        users[i].init(name, txt);
+        
+        fin.read((char*)&capity, sizeof(int)); 
+
+        if (!capity)
+            continue;
+
+        for (auto j{ 0 }; j < capity; ++j)
+        {
+            loadStr(name, fin); 
+            loadStr(txt, fin);
+            fin.read((char*)&foo, sizeof(bool));
+
+            Message msg_scan(txt, name);
+
+            if (foo)
+                msg_scan.setReaded();
+
+            users[i].receiveMessage(msg_scan);
+        }
+    }
+
+    fin.close();
+    return true;
+}
+
+void Chat::saveStr(std::string& str, std::ofstream& fout)
+{
+    int size = sizeof(char) * str.length();
+
+    fout.write((char*)&size, sizeof(int)); 
+    fout.write(str.c_str(), size);
+}
+
+void Chat::loadStr(std::string& str, std::ifstream& fin)
+{
+    int size;
+
+    fin.read((char*)&size, sizeof(int));
+    str.resize(size / sizeof(char));
+    fin.read((char*)str.c_str(), size);
+}
+
+void Chat::scr_load()
+{
+    system("cls");
+    printf("\033[36m\n\n\n");
+    printf("\t\t      Loadind data");
+
+    for (auto i{ 0 }; i < 5; ++i)
+    {
+        mySleep(180);
+        printf(".");
+    }
+
+    if (load())
+    {
+        mySleep(270);
+        printf("\n\t\t       success\n");
+        mySleep(520);
+        clearLine();
+    }
+    else
+    {
+        mySleep(270);
+        printf("\n\t\t        falue\n");
+        mySleep(520);
+        clearLine();
+    }
+    printf("\033[0m");
 }

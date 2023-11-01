@@ -47,10 +47,22 @@ Message& Message::operator=(Message&& other)
 	return *this;
 }
 
-std::string Message::getAuthor() { return author; }
+std::string Message::getAuthor()
+{ 
+	return author; 
+}
 
-bool Message::getFlag() { return is_readed; }
+bool Message::getFlag()
+{
+	return is_readed; 
+}
 
-void Message::setReaded() { is_readed = true; }
+void Message::setReaded()
+{ 
+	is_readed = true; 
+}
 
-std::string Message::getMsg() { return message; }
+std::string Message::getMsg() 
+{ 
+	return message; 
+}

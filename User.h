@@ -2,7 +2,6 @@
 #define USER
 
 #include<iostream>
-#include<string>
 #include"Mailbox.h"
 
 class User
@@ -22,6 +21,7 @@ public:
 
 	int getMessageCnt();
 	std::string getName();
+	std::string getPass();
 	Mailbox* getMailboxPtr();
 	bool checkPass(std::string pass);
 	void init(std::string name, std::string pass);

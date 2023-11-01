@@ -1,7 +1,6 @@
 #ifndef MAILBOX
 #define MAILBOX
 
-#include<string>
 #include"Message.h"
 
 class Mailbox

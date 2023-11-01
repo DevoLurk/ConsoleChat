@@ -70,6 +70,12 @@ int Mailbox::getUnreadCnt()
 	return cnt;
 }
 
-Message* Mailbox::getMailsArray() { return msg_arr_ptr; }
+Message* Mailbox::getMailsArray()
+{ 
+	return msg_arr_ptr; 
+}
 
-int Mailbox::getCapity() { return capity; }
+int Mailbox::getCapity()
+{
+	return capity;
+}
