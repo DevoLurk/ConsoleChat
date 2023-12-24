@@ -95,7 +95,8 @@ void Chat::scr_newAccount()
     std::cin >> pass;
 
     current_user = users_cnt;
-    users[current_user].init(login, pass);
+    users[current_user].init(login);
+    pass_table.add(login, pass);
     users_cnt++;
 
     mySleep();
@@ -133,7 +134,7 @@ void Chat::scr_login()
         printf("\t\t\033[36m PASSWORD: \033[0m");
         std::cin >> pass;
 
-        if (users[current_user].checkPass(pass))
+        if (pass_table.check(login, pass))
         {
             mySleep();
             scr_commands();
@@ -163,7 +164,7 @@ void Chat::scr_login()
     }
 }
 
-void Chat::addUser(User& u)
+void Chat::addUser(User& u, std::string password)
 {
     if (users_cnt < max_users)
     {
@@ -175,14 +176,16 @@ void Chat::addUser(User& u)
                 if (!users_cnt)
                 {
                     current_user = 0;
-                    users[current_user] = std::move(u);
+                    users[current_user] = u;
+                    pass_table.add(u.getName(), password);
                     users_cnt++;
 
                 }
                 else
                 {
                     current_user = users_cnt;
-                    users[current_user] = std::move(u);
+                    users[current_user] = u;
+                    pass_table.add(u.getName(), password);
                     users_cnt++;
                 }
             }
@@ -293,7 +296,7 @@ void Chat::scr_exit()
         printf(".");
     }
 
-    if (save())
+    /*if (save())
     {
         printf("\n\n\t\t     Complete\033[0m");
         mySleep(250);
@@ -302,7 +305,7 @@ void Chat::scr_exit()
     {
         printf("\n\n\t\t     Save error\033[0m");
         mySleep(250);
-    }
+    }*/
 
     printf("\n\n\n\n\n\n\n");
     exit(0);
@@ -625,118 +628,118 @@ void Chat::rememberMail(std::string str)
     }
 }
 
-bool Chat::save()
-{
-    std::ofstream fout(save_path, std::ios_base::binary);
-
-    if (!fout.is_open()) // if file is not opened/created
-        return false;
-
-    fout.write((char*)&mail_cnt, sizeof(int)); // save mail_cnt
-
-    for (auto i{ 0 }; i < mail_cnt; ++i)       // save mails array
-        saveStr(pub_msgArr[i], fout);
-
-    fout.write((char*)&users_cnt, sizeof(int)); // save users_cnt
-
-    for (auto i{ 0 }; i < users_cnt; ++i)    // save Users
-    {
-        bool foo;
-        int capity;
-        std::string str_out;
-        Message* msg_arr;
-
-        str_out = users[i].getName(); // save login
-        saveStr(str_out, fout);
-        str_out = users[i].getPass(); // save password
-        saveStr(str_out, fout);
-
-        msg_arr = users[i].getMailboxPtr()->getMailsArray();
-        capity = users[i].getMailboxPtr()->getCapity();
-       
-        fout.write((char*)&capity, sizeof(int)); // save Mailbox size
-
-        for (auto j{ 0 }; j < capity; ++j) 
-        {
-            str_out = msg_arr[j].getAuthor();
-            saveStr(str_out, fout);           // save name
-            str_out = msg_arr[j].getMsg();
-            saveStr(str_out, fout);           // save message text
-
-            foo = msg_arr[j].getFlag();        
-            fout.write((char*)&foo, sizeof(bool));  // save flag
-        }
-    }
-
-    fout.close();
-    return true;
-}
-
-bool Chat::load()
-{
-    std::ifstream fin(save_path, std::ios_base::binary);
-
-    if (!fin.is_open()) // if file is not opened
-        return false;
-
-    fin.read((char*)&mail_cnt, sizeof(int));
-    
-    for (auto i{ 0 }; i < mail_cnt; ++i)
-        loadStr(pub_msgArr[i], fin);
-
-    fin.read((char*)&users_cnt, sizeof(int));
-
-    for (auto i{ 0 }; i < users_cnt; ++i)    
-    {
-        bool foo;
-        int capity;
-        std::string name, txt;
-
-        loadStr(name, fin);
-        loadStr(txt, fin);
-
-        users[i].init(name, txt);
-        
-        fin.read((char*)&capity, sizeof(int)); 
-
-        if (!capity)
-            continue;
-
-        for (auto j{ 0 }; j < capity; ++j)
-        {
-            loadStr(name, fin); 
-            loadStr(txt, fin);
-            fin.read((char*)&foo, sizeof(bool));
-
-            Message msg_scan(txt, name);
-
-            if (foo)
-                msg_scan.setReaded();
-
-            users[i].receiveMessage(msg_scan);
-        }
-    }
-
-    fin.close();
-    return true;
-}
-
-void Chat::saveStr(std::string& str, std::ofstream& fout)
-{
-    int size = sizeof(char) * str.length();
-
-    fout.write((char*)&size, sizeof(int)); 
-    fout.write(str.c_str(), size);
-}
-
-void Chat::loadStr(std::string& str, std::ifstream& fin)
-{
-    int size;
-
-    fin.read((char*)&size, sizeof(int));
-    str.resize(size / sizeof(char));
-    fin.read((char*)str.c_str(), size);
-}
+//bool Chat::save()
+//{
+//    std::ofstream fout(save_path, std::ios_base::binary);
+//
+//    if (!fout.is_open()) // if file is not opened/created
+//        return false;
+//
+//    fout.write((char*)&mail_cnt, sizeof(int)); // save mail_cnt
+//
+//    for (auto i{ 0 }; i < mail_cnt; ++i)       // save mails array
+//        saveStr(pub_msgArr[i], fout);
+//
+//    fout.write((char*)&users_cnt, sizeof(int)); // save users_cnt
+//
+//    for (auto i{ 0 }; i < users_cnt; ++i)    // save Users
+//    {
+//        bool foo;
+//        int capity;
+//        std::string str_out;
+//        Message* msg_arr;
+//
+//        str_out = users[i].getName(); // save login
+//        saveStr(str_out, fout);
+//        str_out = users[i].getPass(); // save password
+//        saveStr(str_out, fout);
+//
+//        msg_arr = users[i].getMailboxPtr()->getMailsArray();
+//        capity = users[i].getMailboxPtr()->getCapity();
+//       
+//        fout.write((char*)&capity, sizeof(int)); // save Mailbox size
+//
+//        for (auto j{ 0 }; j < capity; ++j) 
+//        {
+//            str_out = msg_arr[j].getAuthor();
+//            saveStr(str_out, fout);           // save name
+//            str_out = msg_arr[j].getMsg();
+//            saveStr(str_out, fout);           // save message text
+//
+//            foo = msg_arr[j].getFlag();        
+//            fout.write((char*)&foo, sizeof(bool));  // save flag
+//        }
+//    }
+//
+//    fout.close();
+//    return true;
+//}
+//
+//bool Chat::load()
+//{
+//    std::ifstream fin(save_path, std::ios_base::binary);
+//
+//    if (!fin.is_open()) // if file is not opened
+//        return false;
+//
+//    fin.read((char*)&mail_cnt, sizeof(int));
+//    
+//    for (auto i{ 0 }; i < mail_cnt; ++i)
+//        loadStr(pub_msgArr[i], fin);
+//
+//    fin.read((char*)&users_cnt, sizeof(int));
+//
+//    for (auto i{ 0 }; i < users_cnt; ++i)    
+//    {
+//        bool foo;
+//        int capity;
+//        std::string name, txt;
+//
+//        loadStr(name, fin);
+//        loadStr(txt, fin);
+//
+//        users[i].init(name);
+//        
+//        fin.read((char*)&capity, sizeof(int)); 
+//
+//        if (!capity)
+//            continue;
+//
+//        for (auto j{ 0 }; j < capity; ++j)
+//        {
+//            loadStr(name, fin); 
+//            loadStr(txt, fin);
+//            fin.read((char*)&foo, sizeof(bool));
+//
+//            Message msg_scan(txt, name);
+//
+//            if (foo)
+//                msg_scan.setReaded();
+//
+//            users[i].receiveMessage(msg_scan);
+//        }
+//    }
+//
+//    fin.close();
+//    return true;
+//}
+//
+//void Chat::saveStr(std::string& str, std::ofstream& fout)
+//{
+//    int size = sizeof(char) * str.length();
+//
+//    fout.write((char*)&size, sizeof(int)); 
+//    fout.write(str.c_str(), size);
+//}
+//
+//void Chat::loadStr(std::string& str, std::ifstream& fin)
+//{
+//    int size;
+//
+//    fin.read((char*)&size, sizeof(int));
+//    str.resize(size / sizeof(char));
+//    fin.read((char*)str.c_str(), size);
+//}
 
 void Chat::scr_load()
 {
@@ -750,7 +753,7 @@ void Chat::scr_load()
         printf(".");
     }
 
-    if (load())
+   /* if (load())
     {
         mySleep(270);
         printf("\n\t\t       success\n");
@@ -763,6 +766,6 @@ void Chat::scr_load()
         printf("\n\t\t        falue\n");
         mySleep(520);
         clearLine();
-    }
+    }*/
     printf("\033[0m");
 }

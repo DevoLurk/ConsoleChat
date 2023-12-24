@@ -4,29 +4,25 @@
 #include<iostream>
 #include"Mailbox.h"
 
+
 class User
 {
 private:
 	std::string login;
-	std::string password;
 	Mailbox mailbox;
 
 public:
 	User() = default;
-	User(std::string name, std::string pass);
-	User(User& other) = delete;
-	User(User&& other) noexcept;
-	User& operator=(User& other) = delete;
-	User& operator=(User&& other) noexcept;
+	User(std::string name);
+	User(User& other);
+	User& operator=(User& other);
 
 	int getMessageCnt();
 	std::string getName();
-	std::string getPass();
 	Mailbox* getMailboxPtr();
-	bool checkPass(std::string pass);
-	void init(std::string name, std::string pass);
+	void init(std::string name);
 	void sendMessage(std::string message, User& target);
 	void receiveMessage(Message msg);
 };
 
-#endif / USER
+#endif // USER
