@@ -7,8 +7,10 @@
 #include<chrono>
 #include<thread>
 #include"User.h"
-#include"myException.h"
 #include"myCrypt.h"
+#include<unordered_map>
+#include<vector>
+#include<deque>
 
 class Chat
 {
@@ -30,14 +32,12 @@ private:
 	Screens current_screen;
 	Screens previos_screen;
 	std::string save_path{"ChatData.bin"};
-	std::string* pub_msgArr;
-	User* users;
-	HashTable pass_table;
+
+	std::vector<User> users_array;
+	std::deque<std::string> public_msgArr;
+	std::unordered_map<std::string, Hash> pass_table;
 	int current_user;
-	int users_cnt;
-	int mail_cnt;
-	int max_users = 100;
-	int max_mails = 100;
+
 	
 	void scr_newAccount();
 	void scr_welcome();
@@ -63,20 +63,20 @@ private:
 	bool strCmp_read(std::string& str, int& num);
 	bool strCmp_pm(std::string& str_cmd, std::string& str_msg);
 
-	/*bool save();
+	bool save();
 	bool load();
 	void saveStr(std::string& str, std::ofstream& fout);
-	void loadStr(std::string& str, std::ifstream& fin);*/
+	void loadStr(std::string& str, std::ifstream& fin);
+	void saveHash(Hash& hash, std::ofstream& fout);
+	void loadHash(Hash& hash, std::ifstream& fin);
 
 public:
 	Chat();
 	Chat(std::string path);
 	Chat(Chat& other) = delete;
 	Chat& operator=(Chat& other) = delete;
-	~Chat();
 
 	void start();
-	void addUser(User& u, std::string password);
 };
 
 #endif // CHAT

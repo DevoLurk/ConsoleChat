@@ -1,13 +1,15 @@
 #include "User.h"
 
-User::User(std::string name)
+User::User(const User& other)
 {
-	login = name;
+	login = other.login;
 }
 
-void User::init(std::string name)
+User& User::operator=(const User& other)
 {
-	login = name;
+	login = other.login;
+
+	return *this;
 }
 
 Mailbox* User::getMailboxPtr()
@@ -22,7 +24,7 @@ void User::sendMessage(std::string message, User& target)
 	target.receiveMessage(msg);
 }
 
-void User::receiveMessage(Message msg)
+void User::receiveMessage(Message& msg)
 {
 	mailbox.addMessage(msg);
 }
@@ -35,16 +37,4 @@ std::string User::getName()
 int User::getMessageCnt()
 {
 	return mailbox.getCapity();
-}
-
-User::User(User& other)
-{
-	login = other.login;
-	mailbox = std::move(other.mailbox);
-}
-
-User& User::operator=(User& other)
-{
-	login = other.login;
-	mailbox = std::move(other.mailbox);
 }

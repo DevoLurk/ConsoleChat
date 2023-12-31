@@ -1,58 +1,16 @@
 #include "Mailbox.h"
 
-Mailbox::Mailbox()
+
+void Mailbox::addMessage(Message& msg)
 {
-	capity = 0;
-	msg_arr_ptr = new Message[max_cap];
-}
-
-Mailbox::~Mailbox()
-{
-	delete[] msg_arr_ptr;
-}
-
-Mailbox::Mailbox(Mailbox&& other) noexcept
-{
-	capity = other.capity;
-	msg_arr_ptr = other.msg_arr_ptr;
-
-	other.capity = 0;
-	other.msg_arr_ptr = nullptr;
-}
-
-Mailbox& Mailbox::operator=(Mailbox&& other) noexcept
-{
-	capity = other.capity;
-	msg_arr_ptr = other.msg_arr_ptr;
-
-	other.capity = 0;
-	other.msg_arr_ptr = nullptr;
-
-	return *this;
-}
-
-void Mailbox::addMessage(Message msg)
-{
-	if (capity)
-	{
-		for (auto i{ capity }; i > 0; --i)
-			msg_arr_ptr[i] = msg_arr_ptr[i - 1];
-
-		msg_arr_ptr[0] = msg;
-		capity++;
-	}
-	else
-	{
-		msg_arr_ptr[0] = msg;
-		capity++;
-	}
+	msgArr.push_back(msg);
 }
 
 bool Mailbox::getMessage(Message& msg, int position)
 {
-	if ((position >= 0) && (position < capity))
+	if ((position >= 0) && (position < msgArr.size()))
 	{
-		msg = msg_arr_ptr[position];
+		msg = msgArr[position];
 		return true;
 	}
 
@@ -63,8 +21,8 @@ int Mailbox::getUnreadCnt()
 {
 	int cnt = 0;
 
-	for (auto i{ 0 }; i < capity; ++i)
-		if (!msg_arr_ptr[i].getFlag())
+	for (auto i{ 0 }; i < msgArr.size(); ++i)
+		if (!msgArr[i].getFlag())
 			cnt++;
 
 	return cnt;
@@ -72,10 +30,10 @@ int Mailbox::getUnreadCnt()
 
 Message* Mailbox::getMailsArray()
 { 
-	return msg_arr_ptr; 
+	return msgArr.data();
 }
 
-int Mailbox::getCapity()
+size_t Mailbox::getCapity()
 {
-	return capity;
+	return msgArr.size();
 }

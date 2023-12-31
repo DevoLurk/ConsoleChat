@@ -1,9 +1,5 @@
 #include "myCrypt.h"
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-/// sha-1
-
 uint cycle_shift_left(uint val, int bit_count)
 {
     return (val << bit_count | val >> (32 - bit_count));
@@ -17,7 +13,8 @@ uint bring_to_human_view(uint val)
         ((val & 0xFF000000) >> 24);
 }
 
-uint* sha1(char* message, uint msize_bytes)
+
+Hash sha1(char* message, uint msize_bytes)
 {
     uint A = H[0];
     uint B = H[1];
@@ -116,136 +113,35 @@ uint* sha1(char* message, uint msize_bytes)
         E = E + e;
     }
 
-    uint* digest = new uint[5];
-    digest[0] = A;
-    digest[1] = B;
-    digest[2] = C;
-    digest[3] = D;
-    digest[4] = E;
+    Hash hash(A, B, C, D, E);
 
     delete[] newMessage;
-    return digest;
+    return hash;
 }
 
-bool compare_hash(uint* hash1, uint* hash2)
-{
-    for (int i = 0; i < 5; i++)
-        if (hash1[i] != hash2[i])
-            return false;
-    return true;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//bool Hash::operator==(Hash const& other)
+//{ 
+//   if (_part1 != other._part1)
+//        return false;
+//   if (_part2 != other._part2)
+//       return false;
+//   if (_part3 != other._part3)
+//       return false;
+//   if (_part4 != other._part4)
+//       return false;
+//   if (_part5 != other._part5)
+//       return false;
 //
-/// HashTable
+//    return true;
+//}
 
-HashTable::HashTable()
+Hash Hash::operator=(const Hash& other)
 {
-    count = 0;
-    mem_size = 8;
-    array = new Pair[mem_size];
-}
+    _part1 = other._part1;
+    _part2 = other._part2;
+    _part3 = other._part3;
+    _part4 = other._part4;
+    _part5 = other._part5;
 
-HashTable::~HashTable()
-{
-    delete[] array;
-}
-
-int HashTable::hash_func(std::string name, int offset)
-{
-    int sum = 0;
-
-    for (int i = 0; i < name.length(); i++)
-        sum += name[i];
-
-    return (sum % mem_size + offset * offset) % mem_size;
-}
-
-void HashTable::add(std::string name, std::string pass)
-{
-    uint* hash = sha1((char*)(pass.c_str()), static_cast<uint>(pass.size()));
-    add(name, hash);
-}
-
-
-void HashTable::add(std::string name, uint* pass_hash)
-{
-    int index = -1, i = 0;
-
-    for (; i < mem_size; i++)
-    {
-        index = hash_func(name, i);
-
-        if (array[index].status != engaged)
-            break;
-    }
-
-    if (i >= mem_size)
-    {
-        resize();
-        add(name, pass_hash);
-    }
-    else
-    {
-        
-        array[index] = Pair(name, pass_hash);
-        count++;
-    }
-}
-
-void HashTable::del(std::string name)
-{
-    for (int i = 0; i < mem_size; i++)
-    {
-        int index = hash_func(name, i);
-
-        if (array[index].login == name)
-        {
-            delete array[index].password_hash;
-            array[index].login.clear();
-            array[index].status = deleted;
-        }
-
-        if (array[index].status == free)
-            break;
-    }
-}
-
-uint* HashTable::find(std::string name)
-{
-    for (int i = 0; i < mem_size; i++)
-    {
-        int index = hash_func(name, i);
-
-        if (array[index].login == name)
-            return array[index].password_hash;
-
-        if (array[index].status == free)
-            break;
-    }
-
-    return nullptr;
-}
-
-void HashTable::resize()
-{
-    Pair* save_ct = array;
-    int oldSize = mem_size;
-
-    mem_size *= 2;   
-    count = 0;     
-    array = new Pair[mem_size];
-
-    for (int i = 0; i < oldSize; i++)
-        if (save_ct[i].status == engaged)
-            add(save_ct[i].login, save_ct[i].password_hash);
-
-    delete[] save_ct;
-}
-
-bool HashTable::check(std::string name, std::string pass)
-{
-
-
-    return true;
+    return *this;
 }

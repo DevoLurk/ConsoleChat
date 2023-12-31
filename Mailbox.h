@@ -2,26 +2,23 @@
 #define MAILBOX
 
 #include"Message.h"
+#include<vector>
 
 class Mailbox
 {
 private:
-	Message* msg_arr_ptr;
-	int max_cap = 100;        
-	int capity;
+	std::vector<Message> msgArr;       
 
 public:
-	Mailbox();
-	Mailbox(Mailbox& other) = delete;
-	Mailbox(Mailbox&& other) noexcept;
-	Mailbox& operator=(Mailbox& other) = delete;
-	Mailbox& operator=(Mailbox&& other) noexcept;
-	~Mailbox();
+	Mailbox() = default;
+	Mailbox(const Mailbox& other) = delete;
+	Mailbox& operator=(const Mailbox& other) = delete;
+	~Mailbox() = default;
 
-	int getCapity();
+	size_t getCapity();
 	int getUnreadCnt();
 	Message* getMailsArray();
-	void addMessage(Message msg);
+	void addMessage(Message& msg);
 	bool getMessage(Message& msg, int position = 0);
 };
 
