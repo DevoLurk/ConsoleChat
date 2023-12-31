@@ -14,7 +14,7 @@ Message::Message(const Message& other)
 	is_readed = other.is_readed;
 }
 
-Message::Message(Message&& other)
+Message::Message(Message&& other) noexcept
 {
 	message = other.message;
 	author = other.author;
@@ -34,7 +34,7 @@ Message& Message::operator=(const Message& other)
 	return *this;
 }
 
-Message& Message::operator=(Message&& other)
+Message& Message::operator=(Message&& other) noexcept
 {
 	message = other.message;
 	author = other.author;

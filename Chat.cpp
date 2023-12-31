@@ -3,13 +3,9 @@
 
 Chat::Chat()
 {
-    users_cnt = 0;
-    mail_cnt = 0;
     current_user = NULL;
     current_screen = NOSCR;
     previos_screen = NOSCR;
-    users = new User[max_users];
-    pub_msgArr = new std::string[max_mails];
 }
 
 Chat::Chat(std::string path) : Chat()
@@ -17,18 +13,16 @@ Chat::Chat(std::string path) : Chat()
     save_path = path;
 }
 
-Chat::~Chat()
-{
-    delete[] users;
-    delete[] pub_msgArr;
-}
-
 void Chat::start()
 {
-    scr_load();
+    if (current_screen == NOSCR)
+    {
+        scr_load();
 
-    if (!users_cnt)
-        scr_newAccount();
+        if (users_array.empty())
+            scr_newAccount();
+    }
+    
 
     char ch = ' ';
 
@@ -59,7 +53,7 @@ void Chat::scr_newAccount()
     previos_screen = current_screen;
     current_screen = NEWACCOUNT;
 
-    if (users_cnt >= (max_users - 1))
+    if (users_array.size() == users_array.max_size())
     {
         system("cls");
         printf("\n\n\n");
@@ -68,10 +62,9 @@ void Chat::scr_newAccount()
         mySleep();
         scr_exit();
     }
-    
+
     std::string login;
     std::string pass;
-    int foo;
 
     system("cls");
     printf("\n\n\n");
@@ -79,7 +72,7 @@ void Chat::scr_newAccount()
     printf("\t\t\033[36m    LOGIN: \033[0m");
     std::cin >> login;
 
-    if (findUser(login, foo))
+    if (findUser(login, current_user))
     {
         system("cls");
         printf("\033[36m");
@@ -90,13 +83,15 @@ void Chat::scr_newAccount()
 
         scr_newAccount();
     }
-     
+
     printf("\t\t\033[36m PASSWORD: \033[0m");
     std::cin >> pass;
 
-    current_user = users_cnt;
-    users[current_user].init(login, pass);
-    users_cnt++;
+    users_array.emplace_back(login);
+    Hash hash = sha1((char*)pass.c_str(), pass.size());
+
+    pass_table.emplace(std::make_pair(login, hash));
+    current_user = users_array.size() - 1;
 
     mySleep();
     scr_commands();
@@ -127,13 +122,15 @@ void Chat::scr_login()
     printf("\n\n\n");
     printf("\t\t\033[36m    LOGIN: \033[0m");
     std::cin >> login;
-    
+
     if (findUser(login, current_user))
     {
         printf("\t\t\033[36m PASSWORD: \033[0m");
         std::cin >> pass;
 
-        if (users[current_user].checkPass(pass))
+        Hash hash = sha1((char*)pass.c_str(), pass.size());
+
+        if (hash == pass_table[login])
         {
             mySleep();
             scr_commands();
@@ -163,42 +160,9 @@ void Chat::scr_login()
     }
 }
 
-void Chat::addUser(User& u)
-{
-    if (users_cnt < max_users)
-    {
-        if (u.getName().length() > 0)
-        {
-            int foo;
-            if (!findUser(u.getName(), foo))
-            {
-                if (!users_cnt)
-                {
-                    current_user = 0;
-                    users[current_user] = std::move(u);
-                    users_cnt++;
-
-                }
-                else
-                {
-                    current_user = users_cnt;
-                    users[current_user] = std::move(u);
-                    users_cnt++;
-                }
-            }
-            else
-                throw users_uniq();
-        }
-        else
-            throw users_empty();
-    }
-    else
-        throw bad_users();
-}
-
 void Chat::showMailbox()
 {
-    Mailbox* box = users[current_user].getMailboxPtr();
+    Mailbox* box = users_array[current_user].getMailboxPtr();
 
     if (!box->getCapity())
     {
@@ -247,8 +211,8 @@ void Chat::showMailbox()
 
 bool Chat::findUser(std::string name, int& pos)
 {
-    for (auto i{ 0 }; i < users_cnt; i++)
-        if (users[i].getName() == name)
+    for (auto i{ 0 }; i < users_array.size(); i++)
+        if (users_array[i].getName() == name)
         {
             pos = i;
             return true;
@@ -340,10 +304,10 @@ void Chat::cmdProcessing()
 
             if (strCmp_read(str, pos))
             {
-                if ((pos >= 1) && (pos <= users[current_user].getMessageCnt()) ) // if message position relevant
+                if ((pos >= 1) && (pos <= users_array[current_user].getMessageCnt()) ) // if message position relevant
                 {
                     --pos; // we print from 1 so user enters nums from 1 (not from 0)
-                    msgArr = users[current_user].getMailboxPtr()->getMailsArray();
+                    msgArr = users_array[current_user].getMailboxPtr()->getMailsArray();
 
                     scr_message(msgArr[pos]);
                 }
@@ -371,7 +335,7 @@ void Chat::cmdProcessing()
                 if (findUser(str, pos)) // find user position by login
                 {
                     Message msg(str_msg, str);
-                    users[pos].receiveMessage(msg);
+                    users_array[pos].receiveMessage(msg);
 
                     clearLine();
                     printf("\033[36m     Message sended to user\033[0m %s\n", str.c_str());
@@ -407,25 +371,24 @@ void Chat::cmdProcessing()
         std::string name_out;
         std::string msg_to_save;
 
-        if (users[current_user].getName().length() > 11)      // shortening of long names
+        if (users_array[current_user].getName().length() > 11)      // shortening of long names
         {
-            name_out.append(users[current_user].getName(), 0, 9);
+            name_out.append(users_array[current_user].getName(), 0, 9);
             name_out += "..";
         }
         else
-            name_out = users[current_user].getName();
+            name_out = users_array[current_user].getName();
         
         myCinClear();
 
         while(true)
         {
             printf("%11s : ", name_out.c_str());
-
             std::getline(std::cin, str);
 
             cmd_default(str);
-
             clearLine();
+
             printf("%11s : ", name_out.c_str());
             printf("%s\n", str.c_str());
 
@@ -457,11 +420,11 @@ void Chat::scr_profile()
 {
     previos_screen = current_screen;
     current_screen = PROFILE;
-    Mailbox* box = users[current_user].getMailboxPtr();
+    Mailbox* box = users_array[current_user].getMailboxPtr();
 
     system("cls");
     printf("\n");
-    printf("\t\033[36m Hello \033[0m %s\n", users[current_user].getName().c_str());
+    printf("\t\033[36m Hello \033[0m %s\n", users_array[current_user].getName().c_str());
     printf("\t\033[36m You have\033[0m %d\033[36m new mails \033[0m \n\n", box->getUnreadCnt());
 
     showMailbox();
@@ -510,13 +473,11 @@ void Chat::scr_public()
     current_screen = PUBLIC;
 
     system("cls");
-    printf("\n\t\033[36m PUBLIC CHAT BEGINNING\033[0m\n\n\n\n"); 
+    printf("\n\t\033[36m PUBLIC CHAT BEGINNING\033[0m\n\n"); 
 
-    if (mail_cnt)
-    {
-        printf("\033[A\033[A");
-        printf("\t\033[36mlsst %d messages loaded\033[0m\n\n", mail_cnt);
-    }
+    if(!public_msgArr.empty())
+        printf("\t\033[36mlsst %d messages loaded\033[0m\n\n", public_msgArr.size());
+    
 
     showHistory();
     cmdProcessing();
@@ -528,7 +489,7 @@ void Chat::scr_private()
     current_screen = PRIVATE;
 
     system("cls");
-    printf("\n\t\033[36m       Currently %d users in chat\033[0m\n\n", users_cnt);
+    printf("\n\t\033[36m       Currently %d users in chat\033[0m\n\n", users_array.size());
 
     showUsers();
     cmdProcessing();
@@ -557,13 +518,13 @@ void Chat::showUsers()
 {
     printf("\n\t");
 
-    for (auto i{ 0 }; i < users_cnt; i++)
+    for (auto i{ 0 }; i < users_array.size(); i++)
     {
         if ((i % 8) == 0)
             printf("\n\t");
 
         printf("\033[32m");
-        printf("%s, ", users[i].getName().c_str());
+        printf("%s, ", users_array[i].getName().c_str());
 
     }
     printf("\b\b.\033[0m\n\n");
@@ -602,26 +563,21 @@ void Chat::myCinClear() // need it for getline // I hate the way how getline wor
 
 void Chat::showHistory()
 {
-    if (!mail_cnt)
+    if (public_msgArr.empty())
         return;
 
-    for (auto i{ 0 }; i < mail_cnt; i++)
-        printf("\t%s\n", pub_msgArr[i].c_str());
+    for (auto i{ 0 }; i < public_msgArr.size(); i++)
+        printf("\t%s\n", public_msgArr[i].c_str());
 }
 
-void Chat::rememberMail(std::string str)
+void Chat::rememberMail(std::string str) // remember 1000 last mails
 {
-    if (mail_cnt < max_mails)
+    if(public_msgArr.size() < 1000)
+        public_msgArr.push_back(str);
+    else
     {
-        pub_msgArr[mail_cnt] = str;
-        mail_cnt++;
-        return;
-    }
-
-    for (auto i{ 1 }; i < max_mails; i++)
-    {
-        pub_msgArr[i - 1] = pub_msgArr[i];
-        pub_msgArr[0] = str;
+        public_msgArr.pop_front();
+        public_msgArr.push_back(str);
     }
 }
 
@@ -630,31 +586,34 @@ bool Chat::save()
     std::ofstream fout(save_path, std::ios_base::binary);
 
     if (!fout.is_open()) // if file is not opened/created
-        return false;
+        return false; 
 
-    fout.write((char*)&mail_cnt, sizeof(int)); // save mail_cnt
+    size_t capity;
 
-    for (auto i{ 0 }; i < mail_cnt; ++i)       // save mails array
-        saveStr(pub_msgArr[i], fout);
+    capity = public_msgArr.size();
+    fout.write((char*)&capity, sizeof(size_t));           // save mails count
 
-    fout.write((char*)&users_cnt, sizeof(int)); // save users_cnt
+    for (auto i{ 0 }; i < public_msgArr.size(); ++i)    // save mails array
+        saveStr(public_msgArr[i], fout);
 
-    for (auto i{ 0 }; i < users_cnt; ++i)    // save Users
+    capity = users_array.size();
+    fout.write((char*)&capity, sizeof(size_t));            // save users count
+
+    for (auto i{ 0 }; i < users_array.size(); ++i)      // save Users array
     {
         bool foo;
-        int capity;
-        std::string str_out;
         Message* msg_arr;
 
-        str_out = users[i].getName(); // save login
-        saveStr(str_out, fout);
-        str_out = users[i].getPass(); // save password
+        std::string str_out = users_array[i].getName();     // save login
         saveStr(str_out, fout);
 
-        msg_arr = users[i].getMailboxPtr()->getMailsArray();
-        capity = users[i].getMailboxPtr()->getCapity();
+        Hash hash_to_save = pass_table[str_out];
+        saveHash(hash_to_save, fout);
+
+        msg_arr = users_array[i].getMailboxPtr()->getMailsArray();
+        capity = users_array[i].getMailboxPtr()->getCapity();
        
-        fout.write((char*)&capity, sizeof(int)); // save Mailbox size
+        fout.write((char*)&capity, sizeof(size_t)); // save Mailbox size
 
         for (auto j{ 0 }; j < capity; ++j) 
         {
@@ -679,25 +638,36 @@ bool Chat::load()
     if (!fin.is_open()) // if file is not opened
         return false;
 
-    fin.read((char*)&mail_cnt, sizeof(int));
-    
-    for (auto i{ 0 }; i < mail_cnt; ++i)
-        loadStr(pub_msgArr[i], fin);
+    size_t load_data_size;
+    std::string load_data;
 
-    fin.read((char*)&users_cnt, sizeof(int));
+    fin.read((char*)&load_data_size, sizeof(size_t));
 
-    for (auto i{ 0 }; i < users_cnt; ++i)    
+    for (auto i{ 0 }; i < load_data_size; ++i)
     {
+        loadStr(load_data, fin);
+        public_msgArr.push_back(load_data);
+    }
+
+
+    fin.read((char*)&load_data_size, sizeof(size_t));
+    users_array.reserve(load_data_size);
+
+    for (auto i{ 0 }; i < load_data_size; ++i)
+    { 
         bool foo;
-        int capity;
+        size_t capity;
         std::string name, txt;
+        Hash hash_to_load;
 
         loadStr(name, fin);
-        loadStr(txt, fin);
+        users_array.emplace_back(name);
 
-        users[i].init(name, txt);
+        loadHash(hash_to_load, fin);
+
+        pass_table.emplace(std::make_pair(name, hash_to_load));
         
-        fin.read((char*)&capity, sizeof(int)); 
+        fin.read((char*)&capity, sizeof(size_t));
 
         if (!capity)
             continue;
@@ -713,7 +683,7 @@ bool Chat::load()
             if (foo)
                 msg_scan.setReaded();
 
-            users[i].receiveMessage(msg_scan);
+            users_array[i].receiveMessage(msg_scan);
         }
     }
 
@@ -765,4 +735,22 @@ void Chat::scr_load()
         clearLine();
     }
     printf("\033[0m");
+}
+
+void Chat::saveHash(Hash& hash, std::ofstream& fout)
+{
+    fout.write((char*)&hash._part1, sizeof(uint));
+    fout.write((char*)&hash._part2, sizeof(uint));
+    fout.write((char*)&hash._part3, sizeof(uint));
+    fout.write((char*)&hash._part4, sizeof(uint));
+    fout.write((char*)&hash._part5, sizeof(uint));
+}
+
+void Chat::loadHash(Hash& hash, std::ifstream& fin)
+{
+    fin.read((char*)&hash._part1, sizeof(uint));
+    fin.read((char*)&hash._part2, sizeof(uint));
+    fin.read((char*)&hash._part3, sizeof(uint));
+    fin.read((char*)&hash._part4, sizeof(uint));
+    fin.read((char*)&hash._part5, sizeof(uint));
 }

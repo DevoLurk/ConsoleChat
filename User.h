@@ -8,25 +8,20 @@ class User
 {
 private:
 	std::string login;
-	std::string password;
 	Mailbox mailbox;
 
 public:
 	User() = default;
-	User(std::string name, std::string pass);
-	User(User& other) = delete;
-	User(User&& other) noexcept;
-	User& operator=(User& other) = delete;
-	User& operator=(User&& other) noexcept;
+	User(std::string login_) : login(std::move(login_)) {};
+	User(const User& other);
+	User& operator=(const User& other);
+	~User() = default;
 
 	int getMessageCnt();
 	std::string getName();
-	std::string getPass();
 	Mailbox* getMailboxPtr();
-	bool checkPass(std::string pass);
-	void init(std::string name, std::string pass);
 	void sendMessage(std::string message, User& target);
-	void receiveMessage(Message msg);
+	void receiveMessage(Message& msg);
 };
 
-#endif / USER
+#endif // USER

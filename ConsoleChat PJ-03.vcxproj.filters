@@ -30,6 +30,9 @@
     <ClCompile Include="Chat.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="myCrypt.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Message.h">
@@ -44,10 +47,7 @@
     <ClInclude Include="Chat.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="myScreens.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="myException.h">
+    <ClInclude Include="myCrypt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
